@@ -1,0 +1,123 @@
+version: '2.3'
+
+volumes:
+  data-postgres:
+    driver: "local"
+  data-opennms-share:
+    driver: "local"
+  data-opennms-etc:
+    driver: "local"
+  data-elasticsearch:
+    driver: "local"
+
+services:
+  database:
+    image: postgres:10
+    container_name: opennms-database
+    environment:
+      - TZ=Europe/Berlin
+      - POSTGRES_HOST=database
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    ports:
+      - "5432"
+    volumes:
+      - data-postgres:/var/lib/postgresql/data
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:6.2.4
+    container_name: kibana
+    ports:
+      - "5601:5601"
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:6.2.4
+    container_name: elasticsearch
+    environment:
+      - cluster.name=horizon-cluster
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - data-elasticsearch:/usr/share/elasticsearch/data
+    ports:
+      - "9200:9200"
+
+  opennms:
+    image: opennms/horizon-core-web:latest
+    container_name: opennms
+    cap_add:
+      - NET_ADMIN
+    environment:
+      - TZ=Europe/Berlin
+      - OPENNMS_DBNAME=opennms
+      - OPENNMS_DBUSER=opennms
+      - OPENNMS_DBPASS=opennms
+      - POSTGRES_HOST=database
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    depends_on:
+      - database
+    volumes:
+      - data-opennms-etc:/opt/opennms/etc
+      - data-opennms-share:/data-opennms-share
+      - ./etc-overlay:/opt/opennms-etc-overlay
+    command: ["-s"]
+    ports:
+      - "8980:8980"
+      - "8101:8101"
+      - "61616:61616"
+      - "162:162/udp"
+
+  minion-01:
+    image: opennms/minion:latest
+    container_name: minion-01
+    environment:
+      - MINION_ID=minion-01
+      - OPENNMS_BROKER_URL=tcp://opennms:61616
+      - OPENNMS_HTTP_URL=http://opennms:8980/opennms
+    command: ["-f"]
+    ports:
+      - "8201:8201"
+      - "50000:50000/udp"
+
+  sentinel-01:
+    image: opennms/sentinel:latest
+    container_name: sentinel-01
+    environment:
+      - SENTINEL_ID=sentinel-01
+      - OPENNMS_BROKER_URL=tcp://opennms:61616
+      - OPENNMS_HTTP_URL=http://opennms:8980/opennms
+      - POSTGRES_HOST=database
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=opennms
+      - POSTGRES_PASSWORD=opennms
+      - POSTGRES_DB=opennms
+    volumes:
+      - "./auto-deploy:/opt/sentinel/deploy"
+    command: ["-f"]
+    ports:
+      - "8301:8301"
+
+  sentinel-02:
+    image: opennms/sentinel:latest
+    container_name: sentinel-02
+    environment:
+      - SENTINEL_ID=sentinel-02
+      - OPENNMS_BROKER_URL=tcp://opennms:61616
+      - OPENNMS_HTTP_URL=http://opennms:8980/opennms
+      - POSTGRES_HOST=database
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=opennms
+      - POSTGRES_PASSWORD=opennms
+      - POSTGRES_DB=opennms
+    volumes:
+      - "./auto-deploy:/opt/sentinel/deploy"
+    command: ["-f"]
+    ports:
+      - "8302:8301"
