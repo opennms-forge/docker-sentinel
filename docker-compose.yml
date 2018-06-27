@@ -14,12 +14,10 @@ services:
   database:
     image: postgres:10
     container_name: opennms-database
+    env_file:
+      - env/postgres.env
     environment:
       - TZ=Europe/Berlin
-      - POSTGRES_HOST=database
-      - POSTGRES_PORT=5432
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
     ports:
       - "5432"
     volumes:
@@ -34,10 +32,8 @@ services:
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:6.2.4
     container_name: elasticsearch
-    environment:
-      - cluster.name=horizon-cluster
-      - bootstrap.memory_lock=true
-      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    env_file:
+      - env/elasticsearch.env
     ulimits:
       memlock:
         soft: -1
@@ -52,15 +48,11 @@ services:
     container_name: opennms
     cap_add:
       - NET_ADMIN
+    env_file:
+      - env/opennms.env
+      - env/postgres.env
     environment:
       - TZ=Europe/Berlin
-      - OPENNMS_DBNAME=opennms
-      - OPENNMS_DBUSER=opennms
-      - OPENNMS_DBPASS=opennms
-      - POSTGRES_HOST=database
-      - POSTGRES_PORT=5432
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
     depends_on:
       - database
     volumes:
@@ -77,10 +69,8 @@ services:
   minion-01:
     image: opennms/minion:latest
     container_name: minion-01
-    environment:
-      - MINION_ID=minion-01
-      - OPENNMS_BROKER_URL=tcp://opennms:61616
-      - OPENNMS_HTTP_URL=http://opennms:8980/opennms
+    env_file:
+      - env/minion.env
     command: ["-f"]
     ports:
       - "8201:8201"
@@ -89,17 +79,13 @@ services:
   sentinel-01:
     image: opennms/sentinel:latest
     container_name: sentinel-01
+    env_file:
+      - env/sentinel.env
+      - env/postgres.env
     environment:
       - SENTINEL_ID=sentinel-01
-      - OPENNMS_BROKER_URL=tcp://opennms:61616
-      - OPENNMS_HTTP_URL=http://opennms:8980/opennms
-      - POSTGRES_HOST=database
-      - POSTGRES_PORT=5432
-      - POSTGRES_USER=opennms
-      - POSTGRES_PASSWORD=opennms
-      - POSTGRES_DB=opennms
     volumes:
-      - "./auto-deploy:/opt/sentinel/deploy"
+      - "./auto-deploy/features-jms.xml:/opt/sentinel/deploy/features-jms.xml"
     command: ["-f"]
     ports:
       - "8301:8301"
@@ -107,17 +93,13 @@ services:
   sentinel-02:
     image: opennms/sentinel:latest
     container_name: sentinel-02
+    env_file:
+      - env/sentinel.env
+      - env/postgres.env
     environment:
       - SENTINEL_ID=sentinel-02
-      - OPENNMS_BROKER_URL=tcp://opennms:61616
-      - OPENNMS_HTTP_URL=http://opennms:8980/opennms
-      - POSTGRES_HOST=database
-      - POSTGRES_PORT=5432
-      - POSTGRES_USER=opennms
-      - POSTGRES_PASSWORD=opennms
-      - POSTGRES_DB=opennms
     volumes:
-      - "./auto-deploy:/opt/sentinel/deploy"
+      - "./auto-deploy/features-jms.xml:/opt/sentinel/deploy/features-jms.xml"
     command: ["-f"]
     ports:
       - "8302:8301"
