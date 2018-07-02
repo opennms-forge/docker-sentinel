@@ -1,0 +1,151 @@
+version: '2.3'
+
+volumes:
+  data-postgres:
+    driver: "local"
+  data-opennms-share:
+    driver: "local"
+  data-opennms-etc:
+    driver: "local"
+  data-elasticsearch:
+    driver: "local"
+
+services:
+  database:
+    image: postgres:10
+    container_name: opennms-database
+    env_file:
+      - env/postgres.env
+    environment:
+      - TZ=Europe/Berlin
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 30s
+      timeout: 30s
+      retries: 3
+    ports:
+      - "5432"
+    volumes:
+      - data-postgres:/var/lib/postgresql/data
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:6.2.4
+    container_name: kibana
+    ports:
+      - "5601:5601"
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:6.2.4
+    container_name: elasticsearch
+    env_file:
+      - env/elasticsearch.env
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - data-elasticsearch:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl --silent --fail localhost:9200/_cluster/health || exit 1"]
+      interval: 30s
+      timeout: 30s
+      retries: 3
+    ports:
+      - "9200:9200"
+
+  opennms:
+    image: opennms/horizon-core-web:latest
+    container_name: opennms
+    depends_on:
+      database:
+        condition: service_healthy
+    cap_add:
+      - NET_ADMIN
+    env_file:
+      - env/opennms.env
+      - env/postgres.env
+    environment:
+      - TZ=Europe/Berlin
+    volumes:
+      - data-opennms-etc:/opt/opennms/etc
+      - data-opennms-share:/data-opennms-share
+      - ./etc-overlay:/opt/opennms-etc-overlay
+    command: ["-s"]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "-I", "http://localhost:8980/opennms/login.jsp"]
+      interval: 1m
+      timeout: 5s
+      retries: 3
+    ports:
+      - "8980:8980"
+      - "8101:8101"
+      - "61616:61616"
+      - "162:162/udp"
+
+  zookeeper:
+    image: zookeeper
+    container_name: zookeeper
+    ports:
+      - "2181:2181"
+
+  kafka:
+    image: wurstmeister/kafka
+    container_name: kafka
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_ADVERTISED_HOST_NAME: 192.168.1.138
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+
+  minion-01:
+    image: opennms/minion:latest
+    container_name: minion-01
+    env_file:
+      - env/minion.env
+    command: ["-f"]
+    healthcheck:
+      test: ["CMD", "/opt/minion/bin/client", "ping", "|", "grep", "-c", "OK", "|", "grep", "2", "||", "exit", "1"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    volumes:
+      - "./minion-overlay/kafka.cfg:/opt/minion/etc/org.opennms.core.ipc.sink.kafka.cfg"
+      - "./minion-overlay/netflow-listener.cfg:/opt/minion/etc/org.opennms.features.telemetry.listeners-udp-50000.cfg"
+      - "./minion-overlay/kafka.boot:/opt/minion/etc/featuresBoot.d/kafka.boot"
+    ports:
+      - "8201:8201"
+      - "50000:50000/udp"
+
+  sentinel-01:
+    image: opennms/sentinel:latest
+    container_name: sentinel-01
+    depends_on:
+      opennms:
+        condition: service_healthy
+    env_file:
+      - env/sentinel.env
+      - env/postgres.env
+    environment:
+      - SENTINEL_ID=sentinel-01
+    volumes:
+      - "./auto-deploy/features-kafka.xml:/opt/sentinel/deploy/features-kafka.xml"
+    command: ["-f"]
+    ports:
+      - "8301:8301"
+
+  sentinel-02:
+    image: opennms/sentinel:latest
+    container_name: sentinel-02
+    depends_on:
+      opennms:
+        condition: service_healthy
+    env_file:
+      - env/sentinel.env
+      - env/postgres.env
+    environment:
+      - SENTINEL_ID=sentinel-02
+    volumes:
+      - "./auto-deploy/features-kafka.xml:/opt/sentinel/deploy/features-kafka.xml"
+    command: ["-f"]
+    ports:
+      - "8302:8301"
