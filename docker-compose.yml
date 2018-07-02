@@ -18,6 +18,11 @@ services:
       - env/postgres.env
     environment:
       - TZ=Europe/Berlin
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 30s
+      timeout: 30s
+      retries: 3
     ports:
       - "5432"
     volumes:
@@ -40,12 +45,20 @@ services:
         hard: -1
     volumes:
       - data-elasticsearch:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl --silent --fail localhost:9200/_cluster/health || exit 1"]
+      interval: 30s
+      timeout: 30s
+      retries: 3
     ports:
       - "9200:9200"
 
   opennms:
     image: opennms/horizon-core-web:latest
     container_name: opennms
+    depends_on:
+      database:
+        condition: service_healthy
     cap_add:
       - NET_ADMIN
     env_file:
@@ -53,13 +66,16 @@ services:
       - env/postgres.env
     environment:
       - TZ=Europe/Berlin
-    depends_on:
-      - database
     volumes:
       - data-opennms-etc:/opt/opennms/etc
       - data-opennms-share:/data-opennms-share
       - ./etc-overlay:/opt/opennms-etc-overlay
     command: ["-s"]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "-I", "http://localhost:8980/opennms/login.jsp"]
+      interval: 1m
+      timeout: 5s
+      retries: 3
     ports:
       - "8980:8980"
       - "8101:8101"
@@ -72,6 +88,11 @@ services:
     env_file:
       - env/minion.env
     command: ["-f"]
+    healthcheck:
+      test: ["CMD", "/opt/minion/bin/client", "ping", "|", "grep", "-c", "OK", "|", "grep", "2", "||", "exit", "1"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
     ports:
       - "8201:8201"
       - "50000:50000/udp"
@@ -79,6 +100,9 @@ services:
   sentinel-01:
     image: opennms/sentinel:latest
     container_name: sentinel-01
+    depends_on:
+      opennms:
+        condition: service_healthy
     env_file:
       - env/sentinel.env
       - env/postgres.env
@@ -93,6 +117,9 @@ services:
   sentinel-02:
     image: opennms/sentinel:latest
     container_name: sentinel-02
+    depends_on:
+      opennms:
+        condition: service_healthy
     env_file:
       - env/sentinel.env
       - env/postgres.env
