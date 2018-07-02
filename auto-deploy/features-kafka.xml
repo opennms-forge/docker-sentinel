@@ -34,7 +34,7 @@
         </config>
         <!-- Point the kafka-server module to kafka -->
         <config name="org.opennms.core.ipc.sink.kafka.consumer">
-          bootstrap.servers=192.168.1.138:9092
+          bootstrap.servers=kafka:9092
         </config>
         <feature>sentinel-core</feature>
         <feature>sentinel-persistence</feature>
