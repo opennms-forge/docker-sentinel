@@ -1,6 +1,6 @@
 FROM opennms/openjdk:latest
 
-ARG SENTINEL_VERSION=branches-jira-HZN-1307
+ARG SENTINEL_VERSION=branches-features-sentinel
 
 ENV SENTINEL_HOME=/opt/sentinel
 
