@@ -21,6 +21,7 @@ usage() {
     echo "    Mount /keystore to your local system or a volume to save the keystore file."
     echo "    You can mount the keystore file to ${SENTINEL_HOME}/etc/scv.jce and just use -f to start the Sentinel."
     echo "-f: Initialize and start OpenNMS Sentinel in foreground."
+    echo "-d: Same as -f, but starts the OpenNMS Sentinel in debug mode"
     echo "-h: Show this help."
     echo ""
 }
@@ -89,7 +90,7 @@ initConfig() {
 
 start() {
     cd ${SENTINEL_HOME}/bin
-    ./karaf server
+    ./karaf server ${SENTINEL_DEBUG}
 }
 
 # Evaluate arguments for build script.
@@ -99,7 +100,7 @@ if [[ "${#}" == 0 ]]; then
 fi
 
 # Evaluate arguments for build script.
-while getopts csfh flag; do
+while getopts csdfh flag; do
     case ${flag} in
         c)
             useEnvCredentials
@@ -108,6 +109,11 @@ while getopts csfh flag; do
             ;;
         s)
             setCredentials
+            ;;
+        d)
+            SENTINEL_DEBUG="debug"
+            initConfig
+            start
             ;;
         f)
             initConfig
