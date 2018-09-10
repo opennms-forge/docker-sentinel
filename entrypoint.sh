@@ -67,6 +67,9 @@ initConfig() {
         sed -i "s,rmiRegistryHost.*,rmiRegistryHost=0.0.0.0,g" ${SENTINEL_HOME}/etc/org.apache.karaf.management.cfg
         sed -i "s,rmiServerHost.*,rmiServerHost=0.0.0.0,g" ${SENTINEL_HOME}/etc/org.apache.karaf.management.cfg
 
+	# Use the local repo
+	sed -i 's|org.ops4j.pax.url.mvn.localRepository.*|#org.ops4j.pax.url.mvn.localRepository=|g' /opt/sentinel/etc/org.ops4j.pax.url.mvn.cfg
+
         # Set Sentinel location and connection to OpenNMS instance
         SENTINEL_CONFIG=${SENTINEL_HOME}/etc/org.opennms.sentinel.controller.cfg
         echo "location = ${SENTINEL_LOCATION}" > ${SENTINEL_CONFIG}

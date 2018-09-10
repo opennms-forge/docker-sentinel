@@ -1,6 +1,6 @@
 FROM opennms/openjdk:latest
 
-ARG SENTINEL_VERSION=branches-features-sentinel
+ARG SENTINEL_VERSION=bleeding
 
 ENV SENTINEL_HOME=/opt/sentinel
 
@@ -28,6 +28,11 @@ RUN yum -y --setopt=tsflags=nodocs update && \
     yum -y install opennms-sentinel && \
     yum clean all && \
     rm -rf /var/cache/yum
+
+# OCE
+RUN yum install -y maven git && \
+    mkdir /git && cd /git && git clone https://github.com/OpenNMS/oce.git && \
+    cd /git/oce && mvn clean install -DskipTests=true
 
 COPY ./entrypoint.sh /
 
