@@ -10,6 +10,9 @@
 # Error codes
 E_ILLEGAL_ARGS=126
 
+SENTINEL_OVERLAY_CFG=/opt/sentinel-overlay
+KARAF_FEATURES_CFG="$SENTINEL_HOME"/etc/org.apache.karaf.features.cfg
+
 # Help function used in error messages and -h option
 usage() {
     echo ""
@@ -91,6 +94,55 @@ initConfig() {
     fi
 }
 
+applyOverlayConfig() {
+  if [ -d "$SENTINEL_OVERLAY_CFG" -a -n "$(ls -A ${SENTINEL_OVERLAY_CFG})" ]; then
+    echo "Apply custom configuration from ${SENTINEL_OVERLAY_CFG}."
+    cp -r ${SENTINEL_OVERLAY_CFG}/* ${SENTINEL_HOME}/ || exit ${E_INIT_CONFIG}
+  else
+    echo "No custom config found in ${SENTINEL_OVERLAY_CFG}. Use default configuration."
+  fi
+}
+
+updateKarafFeaturesConfig() {
+  # Add any additional provided repositories to Karaf config
+  if [ -n "$KARAF_REPOS" ]; then
+    echo "Updating Karaf repositories"
+    local repoReplaceText="# Add product repositories here"
+    local repoPlaceholderLine=$(awk '/'"$repoReplaceText"'/{print NR}' "$KARAF_FEATURES_CFG")
+    # Append a line continuation and comma to the line before the placeholder text
+    sed -i $((repoPlaceholderLine - 1))'s/$/, \\/' "$KARAF_FEATURES_CFG"
+    # Append the features to the featuresBoot by replacing the placeholder text
+    sed -i 's/'"$repoReplaceText"'/'$(sed -e 's/[\/&]/\\&/g' <<< "${KARAF_REPOS// /}")'/' "$KARAF_FEATURES_CFG"
+  fi
+  
+  # Add any additional provided boot features to Karaf config
+  if [ -n "$KARAF_FEATURES" ]; then
+    echo "Updating Karaf features"
+    local featureReplaceText="# Add product features here"
+    local featurePlaceholderLine=$(awk '/'"$featureReplaceText"'/{print NR}' "$KARAF_FEATURES_CFG")
+    # Append a line continuation and comma to the line before the placeholder text
+    sed -i $((featurePlaceholderLine - 1))'s/$/, \\/' "$KARAF_FEATURES_CFG"
+    # Append the features to the featuresBoot by replacing the placeholder text
+    sed -i 's/'"$featureReplaceText"'/'$(sed -e 's/[\/&]/\\&/g' <<< "${KARAF_FEATURES// /}")'/' "$KARAF_FEATURES_CFG"
+  fi
+}
+
+applyKarafDebugLogging() {
+  if [ -n "$KARAF_DEBUG_LOGGING" ]; then
+    echo "Updating Karaf debug logging"
+    for log in $(sed "s/,/ /g" <<< "$KARAF_DEBUG_LOGGING"); do
+      logUnderscored=${log//./_}
+      echo "log4j2.logger.${logUnderscored}.level = DEBUG" >> "$SENTINEL_HOME"/etc/org.ops4j.pax.logging.cfg
+      echo "log4j2.logger.${logUnderscored}.name = $log" >> "$SENTINEL_HOME"/etc/org.ops4j.pax.logging.cfg
+    done
+  fi
+}
+
+configureKaraf() {
+  updateKarafFeaturesConfig
+  applyKarafDebugLogging
+}
+
 start() {
     cd ${SENTINEL_HOME}/bin
     ./karaf server ${SENTINEL_DEBUG}
@@ -108,18 +160,26 @@ while getopts csdfh flag; do
         c)
             useEnvCredentials
             initConfig
+            applyOverlayConfig
+            configureKaraf
             start
             ;;
         s)
             setCredentials
+            applyOverlayConfig
+            configureKaraf
             ;;
         d)
             SENTINEL_DEBUG="debug"
             initConfig
+            applyOverlayConfig
+            configureKaraf
             start
             ;;
         f)
             initConfig
+            applyOverlayConfig
+            configureKaraf
             start
             ;;
         h)
