@@ -10,7 +10,7 @@
 # Error codes
 E_ILLEGAL_ARGS=126
 
-SENTINEL_OVERLAY_CFG=/opt/sentinel-overlay
+SENTINEL_OVERLAY=/opt/sentinel-overlay
 
 # Help function used in error messages and -h option
 usage() {
@@ -93,12 +93,12 @@ initConfig() {
     fi
 }
 
-applyOverlayConfig() {
-  if [ -d "$SENTINEL_OVERLAY_CFG" -a -n "$(ls -A ${SENTINEL_OVERLAY_CFG})" ]; then
-    echo "Apply custom configuration from ${SENTINEL_OVERLAY_CFG}."
-    cp -r ${SENTINEL_OVERLAY_CFG}/* ${SENTINEL_HOME}/ || exit ${E_INIT_CONFIG}
+applyOverlay() {
+  if [ -d "$SENTINEL_OVERLAY" -a -n "$(ls -A ${SENTINEL_OVERLAY})" ]; then
+    echo "Apply custom configuration from ${SENTINEL_OVERLAY}."
+    cp -r ${SENTINEL_OVERLAY}/* ${SENTINEL_HOME}/ || exit ${E_INIT_CONFIG}
   else
-    echo "No custom config found in ${SENTINEL_OVERLAY_CFG}. Use default configuration."
+    echo "No custom config found in ${SENTINEL_OVERLAY}. Use default configuration."
   fi
 }
 
@@ -130,25 +130,25 @@ while getopts csdfh flag; do
         c)
             useEnvCredentials
             initConfig
-            applyOverlayConfig
+            applyOverlay
             applyKarafDebugLogging
             start
             ;;
         s)
             setCredentials
-            applyOverlayConfig
+            applyOverlay
             applyKarafDebugLogging
             ;;
         d)
             SENTINEL_DEBUG="debug"
             initConfig
-            applyOverlayConfig
+            applyOverlay
             applyKarafDebugLogging
             start
             ;;
         f)
             initConfig
-            applyOverlayConfig
+            applyOverlay
             applyKarafDebugLogging
             start
             ;;
