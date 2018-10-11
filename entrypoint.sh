@@ -10,6 +10,8 @@
 # Error codes
 E_ILLEGAL_ARGS=126
 
+SENTINEL_OVERLAY=/opt/sentinel-overlay
+
 # Help function used in error messages and -h option
 usage() {
     echo ""
@@ -91,6 +93,26 @@ initConfig() {
     fi
 }
 
+applyOverlay() {
+  if [ -d "$SENTINEL_OVERLAY" -a -n "$(ls -A ${SENTINEL_OVERLAY})" ]; then
+    echo "Apply custom configuration from ${SENTINEL_OVERLAY}."
+    cp -r ${SENTINEL_OVERLAY}/* ${SENTINEL_HOME}/ || exit ${E_INIT_CONFIG}
+  else
+    echo "No custom config found in ${SENTINEL_OVERLAY}. Use default configuration."
+  fi
+}
+
+applyKarafDebugLogging() {
+  if [ -n "$KARAF_DEBUG_LOGGING" ]; then
+    echo "Updating Karaf debug logging"
+    for log in $(sed "s/,/ /g" <<< "$KARAF_DEBUG_LOGGING"); do
+      logUnderscored=${log//./_}
+      echo "log4j2.logger.${logUnderscored}.level = DEBUG" >> "$SENTINEL_HOME"/etc/org.ops4j.pax.logging.cfg
+      echo "log4j2.logger.${logUnderscored}.name = $log" >> "$SENTINEL_HOME"/etc/org.ops4j.pax.logging.cfg
+    done
+  fi
+}
+
 start() {
     cd ${SENTINEL_HOME}/bin
     ./karaf server ${SENTINEL_DEBUG}
@@ -108,18 +130,26 @@ while getopts csdfh flag; do
         c)
             useEnvCredentials
             initConfig
+            applyOverlay
+            applyKarafDebugLogging
             start
             ;;
         s)
             setCredentials
+            applyOverlay
+            applyKarafDebugLogging
             ;;
         d)
             SENTINEL_DEBUG="debug"
             initConfig
+            applyOverlay
+            applyKarafDebugLogging
             start
             ;;
         f)
             initConfig
+            applyOverlay
+            applyKarafDebugLogging
             start
             ;;
         h)
