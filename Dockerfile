@@ -27,7 +27,10 @@ RUN yum -y --setopt=tsflags=nodocs update && \
     rpm --import http://yum.opennms.org/OPENNMS-GPG-KEY && \
     yum -y install opennms-sentinel && \
     yum clean all && \
-    rm -rf /var/cache/yum
+    rm -rf /var/cache/yum && \
+    chown -R sentinel:sentinel /opt/sentinel
+
+USER sentinel
 
 COPY ./entrypoint.sh /
 
