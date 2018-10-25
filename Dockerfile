@@ -1,6 +1,6 @@
 FROM opennms/openjdk:latest
 
-ARG SENTINEL_VERSION=branches-features-sentinel
+ARG SENTINEL_VERSION=develop
 
 ENV SENTINEL_HOME=/opt/sentinel
 
