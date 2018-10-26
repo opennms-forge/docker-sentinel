@@ -66,11 +66,11 @@ initConfig() {
 
     if [ ! -f ${SENTINEL_HOME}/etc/configured ]; then
         # Expose Karaf Shell
-        sed -i "s,sshHost=127.0.0.1,sshHost=0.0.0.0," ${SENTINEL_HOME}/etc/org.apache.karaf.shell.cfg
+        sed -i "/^sshHost/s/=.*/= 0.0.0.0/" ${SENTINEL_HOME}/etc/org.apache.karaf.shell.cfg
 
         # Expose the RMI registry and server
-        sed -i "s,rmiRegistryHost.*,rmiRegistryHost=0.0.0.0,g" ${SENTINEL_HOME}/etc/org.apache.karaf.management.cfg
-        sed -i "s,rmiServerHost.*,rmiServerHost=0.0.0.0,g" ${SENTINEL_HOME}/etc/org.apache.karaf.management.cfg
+        sed -i "/^rmiRegistryHost/s/=.*/= 0.0.0.0/" ${SENTINEL_HOME}/etc/org.apache.karaf.management.cfg
+        sed -i "/^rmiServerHost/s/=.*/= 0.0.0.0/" ${SENTINEL_HOME}/etc/org.apache.karaf.management.cfg
 
         # Set Sentinel location and connection to OpenNMS instance
         SENTINEL_CONFIG=${SENTINEL_HOME}/etc/org.opennms.sentinel.controller.cfg
