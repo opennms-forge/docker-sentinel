@@ -32,7 +32,7 @@ RUN yum -y --setopt=tsflags=nodocs update && \
 
 USER sentinel
 
-COPY ./entrypoint.sh /
+COPY ./docker-entrypoint.sh /
 
 VOLUME [ "/opt/sentinel/deploy", "/opt/sentinel/etc", "/opt/sentinel/data" ]
 
@@ -41,7 +41,7 @@ LABEL license="AGPLv3" \
       vendor="OpenNMS Community" \
       name="Sentinel"
 
-ENTRYPOINT [ "/entrypoint.sh" ]
+ENTRYPOINT [ "/docker-entrypoint.sh" ]
 
 CMD [ "-h" ]
 

@@ -7,6 +7,11 @@
 #
 # =====================================================================
 
+# Cause false/positives
+# shellcheck disable=SC2086
+
+SENTINEL_OVERLAY_ETC="/opt/sentinel-etc-overlay"
+
 # Error codes
 E_ILLEGAL_ARGS=126
 
@@ -35,16 +40,16 @@ useEnvCredentials(){
 
 setCredentials() {
   # Directory to initialize a new keystore file which can be mounted to the local host
-  if [ -z /keystore ]; then
+  if [ -d /keystore ]; then
     mkdir /keystore
   fi
 
-  read -p "Enter OpenNMS HTTP username: " OPENNMS_HTTP_USER
-  read -s -p "Enter OpenNMS HTTP password: " OPENNMS_HTTP_PASS
+  read -r -p "Enter OpenNMS HTTP username: " OPENNMS_HTTP_USER
+  read -r -s -p "Enter OpenNMS HTTP password: " OPENNMS_HTTP_PASS
   echo ""
 
-  read -p "Enter OpenNMS Broker username: " OPENNMS_BROKER_USER
-  read -s -p "Enter OpenNMS Broker password: " OPENNMS_BROKER_PASS
+  read -r -p "Enter OpenNMS Broker username: " OPENNMS_BROKER_USER
+  read -r -s -p "Enter OpenNMS Broker password: " OPENNMS_BROKER_PASS
   echo ""
 
   ${SENTINEL_HOME}/bin/scvcli set opennms.http ${OPENNMS_HTTP_USER} ${OPENNMS_HTTP_PASS}
@@ -59,7 +64,7 @@ initConfig() {
         exit ${E_ILLEGAL_ARGS}
     fi
 
-    if [ ! -f ${SENTINEL_HOME}/etc/configured} ]; then
+    if [ ! -f ${SENTINEL_HOME}/etc/configured ]; then
         # Expose Karaf Shell
         sed -i "s,sshHost=127.0.0.1,sshHost=0.0.0.0," ${SENTINEL_HOME}/etc/org.apache.karaf.shell.cfg
 
@@ -88,6 +93,16 @@ initConfig() {
     fi
 }
 
+applyOverlayConfig() {
+  # Overlay etc specific config
+  if [ -d "${SENTINEL_OVERLAY_ETC}" ] && [ -n "$(ls -A ${SENTINEL_OVERLAY_ETC})" ]; then
+    echo "Apply custom etc configuration from ${SENTINEL_OVERLAY_ETC}."
+    cp -r ${SENTINEL_OVERLAY_ETC}/* ${SENTINEL_HOME}/etc || exit ${E_INIT_CONFIG}
+  else
+    echo "No custom config found in ${SENTINEL_OVERLAY_ETC}. Use default configuration."
+  fi
+}
+
 start() {
     cd ${SENTINEL_HOME}/bin
     ./karaf server ${SENTINEL_DEBUG}
@@ -105,6 +120,7 @@ while getopts csdfh flag; do
         c)
             useEnvCredentials
             initConfig
+            applyOverlayConfig
             start
             ;;
         s)
@@ -113,10 +129,12 @@ while getopts csdfh flag; do
         d)
             SENTINEL_DEBUG="debug"
             initConfig
+            applyOverlayConfig
             start
             ;;
         f)
             initConfig
+            applyOverlayConfig
             start
             ;;
         h)
@@ -134,7 +152,7 @@ done
 shift $((OPTIND - 1));
 
 # Check if there are remaining arguments
-if [[ "${#}" > 0 ]]; then
+if [[ "${#}" -gt 0 ]]; then
     echo "Error: Too many arguments: ${*}."
     usage
     exit ${E_ILLEGAL_ARGS}
