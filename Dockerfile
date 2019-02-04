@@ -1,4 +1,4 @@
-FROM opennms/openjdk:latest
+FROM opennms/oraclejdk:8u201-b09-b1
 
 ARG SENTINEL_VERSION=stable
 
