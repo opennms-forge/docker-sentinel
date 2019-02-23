@@ -105,7 +105,7 @@ applyOverlayConfig() {
 
 start() {
     cd ${SENTINEL_HOME}/bin
-    ./karaf server ${SENTINEL_DEBUG}
+    exec ./karaf server ${SENTINEL_DEBUG}
 }
 
 # Evaluate arguments for build script.
