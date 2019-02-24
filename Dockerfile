@@ -1,6 +1,6 @@
 FROM opennms/openjdk:latest
 
-ARG SENTINEL_VERSION=develop
+ARG SENTINEL_VERSION="branches/release-24.0.0"
 
 ENV SENTINEL_HOME=/opt/sentinel
 
@@ -23,7 +23,7 @@ ENV POSTGRES_PASSWORD=
 ENV POSTGRES_DB=opennms
 
 RUN yum -y --setopt=tsflags=nodocs update && \
-    rpm -Uvh http://yum.opennms.org/repofiles/opennms-repo-${SENTINEL_VERSION}-rhel7.noarch.rpm && \
+    rpm -Uvh http://yum.opennms.org/repofiles/opennms-repo-${SENTINEL_VERSION/\//-}-rhel7.noarch.rpm && \
     rpm --import http://yum.opennms.org/OPENNMS-GPG-KEY && \
     yum -y install opennms-sentinel && \
     yum clean all && \
