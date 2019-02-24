@@ -28,13 +28,13 @@ RUN yum -y --setopt=tsflags=nodocs update && \
     yum -y install opennms-sentinel && \
     yum clean all && \
     rm -rf /var/cache/yum && \
-    chown -R sentinel:sentinel /opt/sentinel
+    chown -R sentinel:sentinel /opt/sentinel && \
+    chgrp -R 0 /opt/sentinel && \
+    chmod -R g=u /opt/sentinel
 
-USER sentinel
+USER 999
 
 COPY ./docker-entrypoint.sh /
-
-VOLUME [ "/opt/sentinel/deploy", "/opt/sentinel/etc", "/opt/sentinel/data" ]
 
 LABEL license="AGPLv3" \
       org.opennms.horizon.version="${SENTINEL_VERSION}" \
@@ -43,12 +43,11 @@ LABEL license="AGPLv3" \
 
 ENTRYPOINT [ "/docker-entrypoint.sh" ]
 
-CMD [ "-h" ]
+CMD [ "-f" ]
 
 ##------------------------------------------------------------------------------
 ## EXPOSED PORTS
 ##------------------------------------------------------------------------------
 ## -- Sentinel Karaf Debug 5005/TCP
 ## -- Sentinel KARAF SSH   8301/TCP
-EXPOSE 5005
 EXPOSE 8301
