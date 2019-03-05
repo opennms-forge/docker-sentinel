@@ -32,7 +32,7 @@ RUN yum -y --setopt=tsflags=nodocs update && \
 # OCE
 RUN yum install -y maven git && \
     mkdir /git && cd /git && git clone https://github.com/OpenNMS/oce.git && \
-    cd /git/oce && mvn clean install -DskipTests=true
+    cd /git/oce && git checkout -b testing origin/mbrooks/OCE-46 && mvn clean install -DskipTests=true
 
 COPY ./entrypoint.sh /
 
