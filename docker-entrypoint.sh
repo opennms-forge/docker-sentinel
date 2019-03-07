@@ -103,7 +103,7 @@ applyOverlayConfig() {
     echo "No custom config found in ${SENTINEL_OVERLAY_ETC}. Use default configuration."
   fi
   # Overlay for all of the sentinel dir
-  if [ -d "$SENTINEL_OVERLAY" -a -n "$(ls -A ${SENTINEL_OVERLAY})" ]; then
+  if [ -d "$SENTINEL_OVERLAY" ] && [ -n "$(ls -A ${SENTINEL_OVERLAY})" ]; then
     echo "Apply custom configuration from ${SENTINEL_OVERLAY}."
     cp -r ${SENTINEL_OVERLAY}/* ${SENTINEL_HOME}/ || exit ${E_INIT_CONFIG}
   else
