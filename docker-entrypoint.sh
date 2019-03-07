@@ -11,6 +11,7 @@
 # shellcheck disable=SC2086
 
 SENTINEL_OVERLAY_ETC="/opt/sentinel-etc-overlay"
+SENTINEL_OVERLAY="/opt/sentinel-overlay"
 
 # Error codes
 E_ILLEGAL_ARGS=126
@@ -101,6 +102,24 @@ applyOverlayConfig() {
   else
     echo "No custom config found in ${SENTINEL_OVERLAY_ETC}. Use default configuration."
   fi
+  # Overlay for all of the sentinel dir
+  if [ -d "$SENTINEL_OVERLAY" -a -n "$(ls -A ${SENTINEL_OVERLAY})" ]; then
+    echo "Apply custom configuration from ${SENTINEL_OVERLAY}."
+    cp -r ${SENTINEL_OVERLAY}/* ${SENTINEL_HOME}/ || exit ${E_INIT_CONFIG}
+  else
+    echo "No custom config found in ${SENTINEL_OVERLAY}. Use default configuration."
+  fi 
+}
+
+applyKarafDebugLogging() {
+  if [ -n "$KARAF_DEBUG_LOGGING" ]; then
+    echo "Updating Karaf debug logging"
+    for log in $(sed "s/,/ /g" <<< "$KARAF_DEBUG_LOGGING"); do
+      logUnderscored=${log//./_}
+      echo "log4j2.logger.${logUnderscored}.level = DEBUG" >> "$SENTINEL_HOME"/etc/org.ops4j.pax.logging.cfg
+      echo "log4j2.logger.${logUnderscored}.name = $log" >> "$SENTINEL_HOME"/etc/org.ops4j.pax.logging.cfg
+    done
+  fi
 }
 
 start() {
@@ -121,6 +140,7 @@ while getopts csdfh flag; do
             useEnvCredentials
             initConfig
             applyOverlayConfig
+            applyKarafDebugLogging
             start
             ;;
         s)
@@ -130,11 +150,13 @@ while getopts csdfh flag; do
             SENTINEL_DEBUG="debug"
             initConfig
             applyOverlayConfig
+            applyKarafDebugLogging
             start
             ;;
         f)
             initConfig
             applyOverlayConfig
+            applyKarafDebugLogging
             start
             ;;
         h)
