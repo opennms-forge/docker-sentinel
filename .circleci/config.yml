@@ -48,7 +48,7 @@ jobs:
           name: Generate version number for Docker tag
           command: |
             DOCKERHUB_TAG=${CIRCLE_BRANCH#release/}
-            DOCKERHUB_TAG=${DOCKERHUB_TAG/\//-}
+            DOCKERHUB_TAG=${DOCKERHUB_TAG//\//-}
             echo ${DOCKERHUB_TAG} > dockertag
             echo ${DOCKERHUB_TAG}
       - run:
