@@ -1,6 +1,6 @@
 FROM opennms/openjdk:latest
 
-ARG SENTINEL_VERSION="branches/release-24.0.0"
+ARG SENTINEL_VERSION="develop"
 
 ENV SENTINEL_HOME=/opt/sentinel
 
