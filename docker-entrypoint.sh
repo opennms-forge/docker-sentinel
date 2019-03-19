@@ -10,6 +10,9 @@
 # Cause false/positives
 # shellcheck disable=SC2086
 
+# To avoid issues with OpenShift
+umask 002
+
 SENTINEL_OVERLAY_ETC="/opt/sentinel-etc-overlay"
 SENTINEL_OVERLAY="/opt/sentinel-overlay"
 
@@ -123,6 +126,7 @@ applyKarafDebugLogging() {
 }
 
 start() {
+    export KARAF_EXEC="exec"
     cd ${SENTINEL_HOME}/bin
     exec ./karaf server ${SENTINEL_DEBUG}
 }
