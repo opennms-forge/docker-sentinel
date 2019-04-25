@@ -1,4 +1,4 @@
-FROM opennms/openjdk:latest
+FROM opennms/openjdk:11
 
 ARG SENTINEL_VERSION="branches/release-24.0.0"
 ARG MIRROR_HOST=yum.opennms.org
@@ -31,7 +31,10 @@ RUN yum -y --setopt=tsflags=nodocs update && \
     rm -rf /var/cache/yum && \
     chown -R sentinel:sentinel /opt/sentinel && \
     chgrp -R 0 /opt/sentinel && \
-    chmod -R g=u /opt/sentinel
+    chmod -R g=u /opt/sentinel && \
+    setcap cap_net_raw+ep ${JAVA_HOME}/bin/java && \
+    echo ${JAVA_HOME}/lib/jli > /etc/ld.so.conf.d/java-latest.conf && \
+    ldconfig
 
 USER 999
 
