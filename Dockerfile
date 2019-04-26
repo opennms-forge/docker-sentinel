@@ -1,6 +1,6 @@
 FROM opennms/openjdk:11
 
-ARG SENTINEL_VERSION="branches/release-24.0.0"
+ARG SENTINEL_VERSION="stable"
 ARG MIRROR_HOST=yum.opennms.org
 
 ENV SENTINEL_HOME=/opt/sentinel
@@ -29,6 +29,7 @@ RUN yum -y --setopt=tsflags=nodocs update && \
     yum -y install opennms-sentinel && \
     yum clean all && \
     rm -rf /var/cache/yum && \
+    cp /etc/skel/.bash* /opt/sentinel/ && \
     chown -R sentinel:sentinel /opt/sentinel && \
     chgrp -R 0 /opt/sentinel && \
     chmod -R g=u /opt/sentinel && \
