@@ -1,6 +1,6 @@
-FROM opennms/openjdk:latest
+FROM opennms/openjdk:11.0.3.7-b1
 
-ARG SENTINEL_VERSION=develop
+ARG SENTINEL_VERSION=stable
 ARG MIRROR_HOST=yum.opennms.org
 
 ENV SENTINEL_HOME=/opt/sentinel
